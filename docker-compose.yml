@@ -9,6 +9,9 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 
+    ports:
+      - "5432:5432"
+
   adminer:
     image: adminer
     restart: always
