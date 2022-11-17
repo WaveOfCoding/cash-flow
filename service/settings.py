@@ -1,13 +1,31 @@
-from pydantic import BaseSettings
+from functools import lru_cache
+from typing import Optional
+from pydantic import BaseSettings, PostgresDsn, validator, Field
 
 
 class Settings(BaseSettings):
-    server_host: str = '127.0.0.1'
-    server_port: int = 8000
-    database_url: str = 'sqlite:///./database.sqlite3'
+    POSTGRES_DB: str
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_HOST: str = Field(default='localhost')
+    POSTGRES_PORT: str = Field(default='5432')
+
+    SQLALCHEMY_URL: Optional[PostgresDsn] = None
+
+    @validator('SQLALCHEMY_URL', pre=True)
+    def get_sqlalchemy_url(cls, v, values):
+        if isinstance(v, str):
+            return v
+        return PostgresDsn.build(
+            scheme='postgresql+asyncpg',
+            user=values.get('POSTGRES_USER'),
+            password=values.get('POSTGRES_PASSWORD'),
+            host=values.get('POSTGRES_HOST'),
+            port=values.get('POSTGRES_PORT'),
+            path=f'/{values.get("POSTGRES_DB")}'
+        )
 
 
-settings = Settings(
-    _env_file='.env',
-    _env_file_encoding='utf-8',
-)
+@lru_cache
+def get_settings():
+    return Settings()
